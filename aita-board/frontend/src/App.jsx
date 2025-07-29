@@ -1,4 +1,4 @@
-import Board from "./components/board"; // lower-case 'b' if your file is board.jsx
+import Board from "./components/board";
 
 function App() {
   return (

@@ -1,65 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import List from "./List";
 
-const initialLists = [
-  {
-    id: 1,
-    title: "To Do",
-    tasks: [
-      { id: 1, title: "Learn React", description: "Study React fundamentals" },
-      { id: 2, title: "Setup project", description: "Initialize with Vite/React" },
-    ],
-  },
-  {
-    id: 2,
-    title: "In Progress",
-    tasks: [
-      { id: 3, title: "Build UI", description: "Build Board/List/Task components" },
-    ],
-  },
-  {
-    id: 3,
-    title: "Done",
-    tasks: [
-      { id: 4, title: "Folder structure", description: "Create project folders and README" },
-    ],
-  },
-];
+const API_BASE = "http://localhost:4000/api"; // Make sure this matches your backend
 
 export default function Board() {
-  const [lists, setLists] = useState(initialLists);
+  const [lists, setLists] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // To add a new task to a list by listId
-  const addTask = (listId, taskTitle, taskDescription) => {
-    setLists(prev =>
-      prev.map(list =>
-        list.id === listId
-          ? {
-              ...list,
-              tasks: [
-                ...list.tasks,
-                {
-                  id: Date.now(),
-                  title: taskTitle,
-                  description: taskDescription,
-                },
-              ],
-            }
-          : list
-      )
-    );
+  // Fetch lists from backend on mount
+  useEffect(() => {
+    axios.get(`${API_BASE}/lists`)
+      .then(res => setLists(res.data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Add a new task
+  const addTask = async (listId, title, description) => {
+    const res = await axios.post(`${API_BASE}/lists/${listId}/tasks`, { title, description });
+    setLists(lists => lists.map(
+      list => list.id === listId
+        ? { ...list, tasks: [...list.tasks, res.data] }
+        : list
+    ));
   };
 
-  // To delete a task by listId and taskId
-  const deleteTask = (listId, taskId) => {
-    setLists(prev =>
-      prev.map(list =>
-        list.id === listId
-          ? { ...list, tasks: list.tasks.filter(task => task.id !== taskId) }
-          : list
-      )
-    );
+  // Delete a task
+  const deleteTask = async (listId, taskId) => {
+    await axios.delete(`${API_BASE}/lists/${listId}/tasks/${taskId}`);
+    setLists(lists => lists.map(
+      list => list.id === listId
+        ? { ...list, tasks: list.tasks.filter(task => task.id !== taskId) }
+        : list
+    ));
   };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div style={{ display: "flex", padding: 16, backgroundColor: "#ddd", minHeight: "100vh" }}>
